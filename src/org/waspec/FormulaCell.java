@@ -53,13 +53,12 @@ public class FormulaCell implements Cell {
                 index = index + 2;
             }
         }
-        parentSheet.sheet[location.getRow()][location.getCol()] = new RealCell(String.valueOf(result));
+        RealCell realCell = new RealCell(String.valueOf(result), "(" + formula + ")");
+        parentSheet.sheet[location.getRow()][location.getCol()] = realCell;
 
         return String.valueOf(result);
     }
 
-    //TODO 3: split getRangeValues method to two methods
-    //getRange move to SpreadSheet class
     private double[] getRangeValues(String range) {
         SpreadSheetLocation[] locations = parentSheet.getRange(range);
         if (locations == null) {

@@ -85,11 +85,9 @@ class SpreadSheet implements SerializableToString {
         } else if (command.startsWith("sorta") || command.startsWith("sortd")) {
             String[] parts = command.split(" ", 2);
             if (parts[0].equals("sorta")) {
-                //TODO: have the sorting method
                 sortCommand(parts[1], true);
             } else if (parts[0].equals("sortd")) {
                 sortCommand(parts[1], false);
-                //TODO: have the sorting method
             }
         } else {
             String[] parts = command.split(" ", 3);
@@ -112,13 +110,56 @@ class SpreadSheet implements SerializableToString {
                 clear(new SpreadSheetLocation(parts[1]));
                 return "";
             } else if (parts.length == 3 && parts[1].equals("=")) {
-                setCell(new SpreadSheetLocation(parts[0]), parseCell(parts[2], parts[0]));
-                return "";
+                Cell cell = parseCell(parts[2], parts[0]);
+                if (cell.cellType().equals("FormulaType") && checkCircular(parts[0], parts[2])) {
+                    return "Circular Reference.";
+                } else {
+                    setCell(new SpreadSheetLocation(parts[0]), cell);
+                    return "";
+                }
             } else {
                 return null;
             }
         }
         return "";
+    }
+
+    private boolean checkCircular(String location, String value) {
+        if (isDigit(value)) {
+            return false;
+        }
+        value = value.substring(1, value.length() - 1);
+        ArrayList<String> locList = getLocationList(value);
+        if (locList == null) {
+            return true;
+        }
+        for (String s : locList) {
+            if (s.equals(location)) {
+                return true;
+            }
+        }
+        for (String s : locList) {
+            value = getCell(new SpreadSheetLocation(s)).fullCellText();
+            if (checkCircular(location, value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ArrayList<String> getLocationList(String formula) {
+        String[] elements = formula.trim().split(" ");
+        ArrayList<String> result = new ArrayList<>();
+        for (int i = 0; i < elements.length; i++) {
+            if (isLocation(elements[i])) {
+                result.add(elements[i]);
+            }
+        }
+        if (result.size() == 0) {
+            return null;
+        } else {
+            return result;
+        }
     }
 
     Cell getCell(SpreadSheetLocation location) {
@@ -184,8 +225,6 @@ class SpreadSheet implements SerializableToString {
         return locations;
     }
 
-    //TODO 4 : write sortCells method
-    //TODO 5 : write the swap method
     private Cell parseCell(String value, String location) {
         if (value.charAt(0) == '\"' && value.endsWith("\"")) {
             return new TextCell(value);
